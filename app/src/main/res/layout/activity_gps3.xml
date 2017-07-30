@@ -4,13 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.shaloin.gps2.MainActivity">
+    tools:context="com.example.shaloin.gps2.Gps2Activity">
 
     <Button
-        android:id="@+id/retrieve_location_button"
+        android:id="@+id/displayL"
+        android:text="Show"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Retrieve Location"
+        android:layout_height="wrap_content" />
+    <TextView
+        android:id="@+id/location1"
+        android:textSize="20sp"
+        android:layout_below="@+id/displayL"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+
 </RelativeLayout>
