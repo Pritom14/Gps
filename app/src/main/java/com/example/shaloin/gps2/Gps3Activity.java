@@ -6,9 +6,12 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,6 +30,7 @@ import org.json.JSONObject;
 
 public class Gps3Activity extends AppCompatActivity {
 
+    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
     private Button display;
     private TextView displayLocation;
     private LocationManager locationManager;
@@ -35,6 +39,7 @@ public class Gps3Activity extends AppCompatActivity {
     private double lat;
     private double lng;
     String address="";
+    String number="+919707153020";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +69,19 @@ public class Gps3Activity extends AppCompatActivity {
                 Log.e("city",address);
                 Toast.makeText(getApplicationContext(), "City : " + address, Toast.LENGTH_LONG);
                 displayLocation.setText("City : "+address);
+                if (ContextCompat.checkSelfPermission(Gps3Activity.this,
+                        Manifest.permission.SEND_SMS)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(Gps3Activity.this,
+                            Manifest.permission.SEND_SMS)) {
+                    } else {
+                        ActivityCompat.requestPermissions(Gps3Activity.this,
+                                new String[]{Manifest.permission.SEND_SMS},
+                                MY_PERMISSIONS_REQUEST_SEND_SMS);
+                    }
+                    return;
+                }
+                messageSending();
 
 //                JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET,
 //                        "http://maps.googleapis.com/maps/api/geocode/json?latlng="+ 24.7593+","+92.7839 +"&sensor=true",
@@ -139,5 +157,30 @@ public class Gps3Activity extends AppCompatActivity {
             }
         });
         requestQueue.add(request);
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_SEND_SMS: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    messageSending();
+
+                } else {
+                    Toast.makeText(getApplicationContext(),
+                            "SMS faild, please try again.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+            }
+        }
+
+    }
+
+    public void messageSending(){
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(number, null, address, null, null);
+        Toast.makeText(getApplicationContext(), "SMS sent.",
+                Toast.LENGTH_LONG).show();
     }
 }
