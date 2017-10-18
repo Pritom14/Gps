@@ -3,17 +3,24 @@ package com.example.shaloin.gps2;
 import android.*;
 import android.Manifest;
 import android.app.PendingIntent;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,7 +44,7 @@ public class Gps4Activity extends AppCompatActivity implements
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
     private TextView display1,display2,display3,display4,display5;
     private Button button;
-    String number="+919707153020";
+    String number="";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,9 +75,32 @@ public class Gps4Activity extends AppCompatActivity implements
                                 new String[]{Manifest.permission.SEND_SMS},
                                 MY_PERMISSIONS_REQUEST_SEND_SMS);
                     } else {
-                        callPlaceDetectionApi();
-                    }
+                        final AlertDialog.Builder dialogBuilder=new AlertDialog.Builder(Gps4Activity.this);
+                        LayoutInflater inflater=Gps4Activity.this.getLayoutInflater();
+                        final View dialogView=inflater.inflate(R.layout.custom_dialog,null);
+                        dialogBuilder.setView(dialogView);
 
+                        final EditText phoneN=(EditText)dialogView.findViewById(R.id.dialogEditPhID);
+                        dialogBuilder.setTitle("Send Location");
+                        dialogBuilder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                String number2=phoneN.getText().toString();
+                                number=number2;
+                                callPlaceDetectionApi();
+                            }
+                        });
+
+                        dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+
+                        AlertDialog b=dialogBuilder.create();
+                        b.show();
+                    }
                 }
             }
         });
@@ -105,6 +135,25 @@ public class Gps4Activity extends AppCompatActivity implements
         }
     }
 
+    /*@Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater=getMenuInflater();
+        inflater.inflate(R.menu.menu,menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()){
+            case R.id.add_number:
+
+
+
+            default:
+            return super.onOptionsItemSelected(item);
+        }
+    }*/
+
     private void callPlaceDetectionApi() throws SecurityException {
         PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
                 .getCurrentPlace(mGoogleApiClient, null);
@@ -126,16 +175,15 @@ public class Gps4Activity extends AppCompatActivity implements
 //                            placeLikelihood.getLikelihood()));
                     //display1.setText(placeLikelihood.getPlace().getName().toString());
                     display2.setText(placeLikelihood.getPlace().getAddress().toString());
-                    //display3.setText(placeLikelihood.getPlace().getAttributions().toString());
-                    //display4.setText(placeLikelihood.getPlace().getLocale().toString());
-                    //display5.setText(placeLikelihood.getPlace().getPlaceTypes().toString());
+
 
 //                    sendMySMS(placeLikelihood.getPlace().getAddress().toString());
-                    SmsManager smsManager = SmsManager.getDefault();
-                    smsManager.sendTextMessage(number, null, placeLikelihood.getPlace().getAddress().toString(),
-                            null, null);
-                    Toast.makeText(getApplicationContext(), "SMS sent.",
-                            Toast.LENGTH_LONG).show();
+//                    SmsManager smsManager = SmsManager.getDefault();
+//                    smsManager.sendTextMessage(number, null, placeLikelihood.getPlace().getAddress().toString(),
+//                            null, null);
+//                    Toast.makeText(getApplicationContext(), "SMS sent.",
+//                            Toast.LENGTH_LONG).show();
+                    messageSending(placeLikelihood.getPlace().getAddress().toString());
                     break;
                     //likelyPlaces.release();
                 }
@@ -144,17 +192,13 @@ public class Gps4Activity extends AppCompatActivity implements
             }
         });
     }
-//    private void sendMySMS(String messege)
-//    {
-//        SmsManager sms = SmsManager.getDefault();
-//        List<String> messages = sms.divideMessage(messege);
-//        for (String msg : messages)
-//        {
-//            PendingIntent sentIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent("SMS_SENT"), 0);
-//            PendingIntent deliveredIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent("SMS_DELIVERED"), 0);
-//
-//            sms.sendTextMessage(number, null, msg, sentIntent, deliveredIntent);
-//        }
-//    }
+
+    public void messageSending(String message){
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(number, null, message, null, null);
+        Toast.makeText(getApplicationContext(), "SMS sent.",
+                Toast.LENGTH_LONG).show();
+    }
+
 
 }
