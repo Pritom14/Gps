@@ -1,51 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/constraint"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.example.shaloin.gps2.Gps4Activity">
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        style="@style/ToolbarTheme"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:background="?colorPrimary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:subtitle="Send your location via SMS"
+        app:title="SOS signal"
+        tools:layout_editor_absoluteX="0dp" />
 
-    <Button
-        android:id="@+id/showL"
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/show_button"
         android:text="Show"
-        android:layout_centerHorizontal="true"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:id="@+id/location2"
-        android:layout_width="wrap_content"
-        android:layout_below="@+id/showL"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:id="@+id/location3"
-        android:layout_width="wrap_content"
-        android:layout_below="@+id/location2"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:id="@+id/location4"
-        android:layout_width="wrap_content"
-        android:layout_below="@+id/location3"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:id="@+id/location5"
-        android:layout_width="wrap_content"
-        android:layout_below="@+id/location4"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:id="@+id/location6"
-        android:layout_width="wrap_content"
-        android:layout_below="@+id/location5"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:layout_height="wrap_content" />
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="368dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/toolbar"
+        android:layout_marginTop="8dp"
+        android:drawableLeft="@drawable/ic_place_black_24dp"
+        android:drawablePadding="16dp"
+        android:drawableStart="@drawable/ic_place_black_24dp"
+        android:gravity="start|center_vertical"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        android:theme="@style/ButtonTheme"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        app:layout_constraintVertical_bias="0.0"
+        tools:layout_editor_absoluteX="8dp" />
 
-</RelativeLayout>
+    <android.support.v7.widget.AppCompatTextView
+        android:id="@+id/location_textview"
+        android:text=""
+        android:layout_width="wrap_content"
+        android:layout_below="@+id/show_button"
+        android:layout_centerHorizontal="true"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/show_button"
+        app:layout_constraintVertical_bias="0.0"
+        tools:layout_editor_absoluteX="159dp" />
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/view_button"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="368dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/location_textview"
+        android:drawableLeft="@drawable/ic_list_black_24dp"
+        android:drawablePadding="16dp"
+        android:drawableStart="@drawable/ic_list_black_24dp"
+        android:gravity="center_vertical"
+        android:text="View Contacts"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        android:theme="@style/ButtonTheme"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        android:layout_marginBottom="180dp" />
+
+
+</android.support.constraint.ConstraintLayout>
+
+
+
+
