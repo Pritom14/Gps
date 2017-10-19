@@ -16,7 +16,7 @@ import java.util.List;
 public class UserDatabase extends SQLiteOpenHelper {
 
     // Table Name
-    public static final String TABLE_NAME = "User";
+    public static final String TABLE_NAME = "UserDataB";
 
     // Table columns
     public static final String _ID = "_id";

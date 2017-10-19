@@ -6,6 +6,8 @@ import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -32,6 +34,8 @@ import com.google.android.gms.location.places.PlaceLikelihood;
 import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class Gps4Activity extends AppCompatActivity implements
@@ -45,10 +49,19 @@ public class Gps4Activity extends AppCompatActivity implements
     private TextView display;
     private Button location_button,contacts_button;
     String number="+919707153020";
+
+    HashSet<String> numbers;
+    SQLiteDatabase db;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gps4);
+
+        numbers=new HashSet<>();
+        db = new UserDatabase(this).getReadableDatabase();
+
+
         location_button=(Button)findViewById(R.id.show_button);
         contacts_button=(Button)findViewById(R.id.view_button);
         display=(TextView)findViewById(R.id.location_textview);
@@ -85,6 +98,26 @@ public class Gps4Activity extends AppCompatActivity implements
             }
         });
     }
+
+
+
+
+    public HashSet<String> getContacts(){
+
+        Cursor cursor=db.rawQuery("SELECT * FROM "+UserDatabase.TABLE_NAME,null);
+        /*db.execSQL("create table " + UserDatabase.TABLE_NAME + "(" + UserDatabase._ID
+                + " INTEGER PRIMARY KEY AUTOINCREMENT, " + UserDatabase.NAME + " TEXT NOT NULL, " +
+                UserDatabase.NUMBER + " TEXT);");
+*/
+        while (cursor.moveToNext()){
+            String contact=cursor.getString(cursor.getColumnIndex(UserDatabase.NUMBER));
+            numbers.add(contact);
+        }
+        return numbers;
+    }
+
+
+
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
@@ -139,8 +172,10 @@ public class Gps4Activity extends AppCompatActivity implements
 
     public void messageSending(String message){
         SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(number, null, message, null, null);
-        Toast.makeText(getApplicationContext(), "SMS sent.",
+//        smsManager.sendTextMessage(number, null, message, null, null);
+        getContacts();
+        smsManager.sendTextMessage(String.valueOf(numbers),null,message,null,null);
+        Toast.makeText(getApplicationContext(), "SMS sent."+String.valueOf(numbers),
                 Toast.LENGTH_LONG).show();
     }
 
