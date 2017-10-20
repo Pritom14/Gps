@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -46,22 +47,26 @@ public class Gps4Activity extends AppCompatActivity implements
     private GoogleApiClient mGoogleApiClient;
     private static final int PERMISSION_REQUEST_CODE = 100;
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
+
+    private static final int ACCESS_FINE_LOCATION_ID=99;
+    private static final int SEND_SMS_REQUEST_ID=98;
+    private static final int RECEIVE_SMS_REQUEST_ID=97;
+    private static final int ACCESS_COARSE_LOCATION_ID=96;
+
     private TextView display;
     private Button location_button,contacts_button;
-    String number="+919707153020";
-
-    HashSet<String> numbers;
+    //String number="+919707153020";
+    ArrayList<String> numbers;
+    ArrayList<String> result;
     SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gps4);
-
-        numbers=new HashSet<>();
+        numbers=new ArrayList<>();
+        result=new ArrayList<>();
         db = new UserDatabase(this).getReadableDatabase();
-
-
         location_button=(Button)findViewById(R.id.show_button);
         contacts_button=(Button)findViewById(R.id.view_button);
         display=(TextView)findViewById(R.id.location_textview);
@@ -71,6 +76,18 @@ public class Gps4Activity extends AppCompatActivity implements
                 .enableAutoManage(this, GOOGLE_API_CLIENT_ID, this)
                 .build();
 
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                ACCESS_FINE_LOCATION_ID);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.SEND_SMS},
+                SEND_SMS_REQUEST_ID);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.RECEIVE_SMS},
+                RECEIVE_SMS_REQUEST_ID);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                ACCESS_COARSE_LOCATION_ID);
         location_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -100,24 +117,15 @@ public class Gps4Activity extends AppCompatActivity implements
     }
 
 
-
-
-    public HashSet<String> getContacts(){
+    public ArrayList<String> getContacts(){
 
         Cursor cursor=db.rawQuery("SELECT * FROM "+UserDatabase.TABLE_NAME,null);
-        /*db.execSQL("create table " + UserDatabase.TABLE_NAME + "(" + UserDatabase._ID
-                + " INTEGER PRIMARY KEY AUTOINCREMENT, " + UserDatabase.NAME + " TEXT NOT NULL, " +
-                UserDatabase.NUMBER + " TEXT);");
-*/
         while (cursor.moveToNext()){
             String contact=cursor.getString(cursor.getColumnIndex(UserDatabase.NUMBER));
             numbers.add(contact);
         }
         return numbers;
     }
-
-
-
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
@@ -148,7 +156,6 @@ public class Gps4Activity extends AppCompatActivity implements
         }
     }
 
-
     private void callPlaceDetectionApi() throws SecurityException {
         PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
                 .getCurrentPlace(mGoogleApiClient, null);
@@ -173,11 +180,11 @@ public class Gps4Activity extends AppCompatActivity implements
     public void messageSending(String message){
         SmsManager smsManager = SmsManager.getDefault();
 //        smsManager.sendTextMessage(number, null, message, null, null);
-        getContacts();
-        smsManager.sendTextMessage(String.valueOf(numbers),null,message,null,null);
-        Toast.makeText(getApplicationContext(), "SMS sent."+String.valueOf(numbers),
-                Toast.LENGTH_LONG).show();
+        result=getContacts();
+        for (int i=0;i<result.size();i++){
+            smsManager.sendTextMessage(result.get(i),null,message,null,null);
+            Toast.makeText(getApplicationContext(), "SMS sent."+String.valueOf(numbers),
+                    Toast.LENGTH_LONG).show();
+        }
     }
-
-
 }
