@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.icu.text.DateFormat;
 
 /**
  * Created by shaloin on 16/10/17.
@@ -58,6 +59,19 @@ public class DatabaseManager {
 
     public void delete(long _id) {
         database.delete(UserDatabase.TABLE_NAME, UserDatabase._ID + "=" + _id, null);
+    }
+
+    public boolean isEmpty(){
+        SQLiteDatabase db;
+        db=new UserDatabase(context).getWritableDatabase();
+        Cursor cursor=db.rawQuery("SELECT * FROM "+UserDatabase.TABLE_NAME,null);
+        Boolean rowExists;
+        if (cursor.moveToFirst()){
+            rowExists=false;
+        }else {
+            rowExists=true;
+        }
+        return rowExists;
     }
 
 }

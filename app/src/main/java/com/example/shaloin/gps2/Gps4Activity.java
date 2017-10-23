@@ -16,6 +16,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -45,9 +46,9 @@ public class Gps4Activity extends AppCompatActivity implements
     private static final String LOG_TAG = "PlacesAPIActivity";
     private static final int GOOGLE_API_CLIENT_ID = 0;
     private GoogleApiClient mGoogleApiClient;
-    private static final int PERMISSION_REQUEST_CODE = 100;
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
 
+    private static final int PERMISSION_REQUEST_CODE = 100;
     private static final int ACCESS_FINE_LOCATION_ID=99;
     private static final int SEND_SMS_REQUEST_ID=98;
     private static final int RECEIVE_SMS_REQUEST_ID=97;
@@ -59,6 +60,7 @@ public class Gps4Activity extends AppCompatActivity implements
     ArrayList<String> numbers;
     ArrayList<String> result;
     SQLiteDatabase db;
+    DatabaseManager manager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +69,7 @@ public class Gps4Activity extends AppCompatActivity implements
         numbers=new ArrayList<>();
         result=new ArrayList<>();
         db = new UserDatabase(this).getReadableDatabase();
+        manager=new DatabaseManager(Gps4Activity.this);
         location_button=(Button)findViewById(R.id.show_button);
         contacts_button=(Button)findViewById(R.id.view_button);
         display=(TextView)findViewById(R.id.location_textview);
@@ -91,19 +94,53 @@ public class Gps4Activity extends AppCompatActivity implements
         location_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mGoogleApiClient.isConnected()) {
-                    if (ActivityCompat.checkSelfPermission(Gps4Activity.this,
-                            android.Manifest.permission.ACCESS_FINE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions(Gps4Activity.this,
-                                new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                                PERMISSION_REQUEST_CODE);
-                        ActivityCompat.requestPermissions(Gps4Activity.this,
-                                new String[]{Manifest.permission.SEND_SMS},
-                                MY_PERMISSIONS_REQUEST_SEND_SMS);
+                if (!manager.isEmpty()) {
+                    if (mGoogleApiClient.isConnected()) {
+                        if (ActivityCompat.checkSelfPermission(Gps4Activity.this,
+                                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                                != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(Gps4Activity.this,
+                                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                                    PERMISSION_REQUEST_CODE);
+                            ActivityCompat.requestPermissions(Gps4Activity.this,
+                                    new String[]{Manifest.permission.SEND_SMS},
+                                    MY_PERMISSIONS_REQUEST_SEND_SMS);
+                        }
                     }
+                    callPlaceDetectionApi();
                 }
-                callPlaceDetectionApi();
+                 else {
+                    final AlertDialog.Builder dialogBuilder=new AlertDialog.Builder(Gps4Activity.this);
+                    LayoutInflater inflater=Gps4Activity.this.getLayoutInflater();
+                    final View dialogView = inflater.inflate(R.layout.custom_dialog, null);
+                    dialogBuilder.setView(dialogView);
+                    final EditText name = (EditText) dialogView.findViewById(R.id.dialogEditNmID);
+                    final EditText phone = (EditText) dialogView.findViewById(R.id.dialogEditPhID);
+
+                    dialogBuilder.setTitle("Send To");
+                    dialogBuilder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (!TextUtils.isEmpty(name.getText().toString())
+                                    && !TextUtils.isEmpty(phone.getText().toString())){
+                                callPlaceDetectionApi2(phone.getText().toString());
+                            } else {
+                                Toast.makeText(getApplicationContext(),
+                                        "Empty field(s)",Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
+
+                    dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+
+                    AlertDialog b=dialogBuilder.create();
+                    b.show();
+                }
             }
         });
 
@@ -115,7 +152,6 @@ public class Gps4Activity extends AppCompatActivity implements
             }
         });
     }
-
 
     public ArrayList<String> getContacts(){
 
@@ -152,7 +188,6 @@ public class Gps4Activity extends AppCompatActivity implements
                     return;
                 }
                 break;
-
         }
     }
 
@@ -172,7 +207,26 @@ public class Gps4Activity extends AppCompatActivity implements
                     break;
                 }
                 likelyPlaces.release();
+            }
+        });
+    }
 
+    private void callPlaceDetectionApi2(final String ph_number) throws SecurityException {
+        PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
+                .getCurrentPlace(mGoogleApiClient, null);
+        result.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
+            @Override
+            public void onResult(PlaceLikelihoodBuffer likelyPlaces) {
+                for (PlaceLikelihood placeLikelihood : likelyPlaces) {
+                    Log.i(LOG_TAG, String.format("Place '%s' with " +
+                                    "likelihood: %g",
+                            placeLikelihood.getPlace().getName(),
+                            placeLikelihood.getLikelihood()));
+                    display.setText(placeLikelihood.getPlace().getAddress().toString());
+                    messageSending_individual(ph_number,placeLikelihood.getPlace().getAddress().toString());
+                    break;
+                }
+                likelyPlaces.release();
             }
         });
     }
@@ -183,8 +237,15 @@ public class Gps4Activity extends AppCompatActivity implements
         result=getContacts();
         for (int i=0;i<result.size();i++){
             smsManager.sendTextMessage(result.get(i),null,message,null,null);
-            Toast.makeText(getApplicationContext(), "SMS sent."+String.valueOf(numbers),
+            Toast.makeText(getApplicationContext(), "SMS sent : "+String.valueOf(numbers),
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    public void messageSending_individual(String ph_number,String message){
+        SmsManager smsManager=SmsManager.getDefault();
+        smsManager.sendTextMessage(ph_number,null,message,null,null);
+        Toast.makeText(getApplicationContext(),"SMS sent : "+String.valueOf(ph_number),
+                Toast.LENGTH_LONG).show();
     }
 }
