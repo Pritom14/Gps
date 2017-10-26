@@ -2,13 +2,16 @@ package com.example.shaloin.gps2;
 
 import android.*;
 import android.Manifest;
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -32,6 +35,13 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStates;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.places.PlaceLikelihood;
 import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
@@ -41,18 +51,18 @@ import java.util.HashSet;
 import java.util.List;
 
 public class Gps4Activity extends AppCompatActivity implements
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
     private static final String LOG_TAG = "PlacesAPIActivity";
     private static final int GOOGLE_API_CLIENT_ID = 0;
-    private GoogleApiClient mGoogleApiClient;
-    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
 
+    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =0 ;
     private static final int PERMISSION_REQUEST_CODE = 100;
     private static final int ACCESS_FINE_LOCATION_ID=99;
     private static final int SEND_SMS_REQUEST_ID=98;
     private static final int RECEIVE_SMS_REQUEST_ID=97;
     private static final int ACCESS_COARSE_LOCATION_ID=96;
+    private static final int REQUEST_LOCATION=199;
 
     private TextView display;
     private Button location_button,contacts_button;
@@ -61,6 +71,10 @@ public class Gps4Activity extends AppCompatActivity implements
     ArrayList<String> result;
     SQLiteDatabase db;
     DatabaseManager manager;
+
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest locationRequest;
+    private PendingResult<LocationSettingsResult> locationSettingsResultPendingResult;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,10 +90,14 @@ public class Gps4Activity extends AppCompatActivity implements
 
         mGoogleApiClient = new GoogleApiClient.Builder(Gps4Activity.this)
                 .addApi(Places.PLACE_DETECTION_API)
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(Gps4Activity.this)
+                .addOnConnectionFailedListener(Gps4Activity.this)
                 .enableAutoManage(this, GOOGLE_API_CLIENT_ID, this)
                 .build();
+        mGoogleApiClient.connect();
 
-        ActivityCompat.requestPermissions(this,
+        /*ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                 ACCESS_FINE_LOCATION_ID);
         ActivityCompat.requestPermissions(this,
@@ -90,12 +108,15 @@ public class Gps4Activity extends AppCompatActivity implements
                 RECEIVE_SMS_REQUEST_ID);
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                ACCESS_COARSE_LOCATION_ID);
+                ACCESS_COARSE_LOCATION_ID);*/
+        setPermissions();
+
+
         location_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (!manager.isEmpty()) {
-                    if (mGoogleApiClient.isConnected()) {
+                    /*if (mGoogleApiClient.isConnected()) {
                         if (ActivityCompat.checkSelfPermission(Gps4Activity.this,
                                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                                 != PackageManager.PERMISSION_GRANTED) {
@@ -105,8 +126,9 @@ public class Gps4Activity extends AppCompatActivity implements
                             ActivityCompat.requestPermissions(Gps4Activity.this,
                                     new String[]{Manifest.permission.SEND_SMS},
                                     MY_PERMISSIONS_REQUEST_SEND_SMS);
+                            setPermissions();
                         }
-                    }
+                    }*/
                     callPlaceDetectionApi();
                 }
                  else {
@@ -154,13 +176,77 @@ public class Gps4Activity extends AppCompatActivity implements
     }
 
     public ArrayList<String> getContacts(){
-
         Cursor cursor=db.rawQuery("SELECT * FROM "+UserDatabase.TABLE_NAME,null);
         while (cursor.moveToNext()){
             String contact=cursor.getString(cursor.getColumnIndex(UserDatabase.NUMBER));
             numbers.add(contact);
         }
         return numbers;
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        locationRequest=LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(30*1000);
+        locationRequest.setFastestInterval(5*1000);
+
+        LocationSettingsRequest.Builder builder=new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        builder.setAlwaysShow(true);
+
+        locationSettingsResultPendingResult=LocationServices.SettingsApi
+                .checkLocationSettings(mGoogleApiClient,builder.build());
+        locationSettingsResultPendingResult.setResultCallback(new ResultCallback<LocationSettingsResult>() {
+            @Override
+            public void onResult(@NonNull LocationSettingsResult locationSettingsResult) {
+
+                final Status status=locationSettingsResult.getStatus();
+                final LocationSettingsStates states=locationSettingsResult.getLocationSettingsStates();
+                switch (status.getStatusCode()) {
+                    case LocationSettingsStatusCodes.SUCCESS:
+                        //All location settings are satisfied. The client can initialize location requests here
+                        break;
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        //Location settings are not satisfied but could be fixed by showing user a dialog
+                        try {
+                            status.startResolutionForResult(Gps4Activity.this,REQUEST_LOCATION);
+                        } catch (IntentSender.SendIntentException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        //Location settings are not satisfied and we have no way to fix the settings
+                        //so we cannot show the dialog
+                        break;
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode){
+            case REQUEST_LOCATION:
+                switch (resultCode){
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getApplicationContext(),
+                                "Location Enabled!!",Toast.LENGTH_LONG).show();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        Toast.makeText(getApplicationContext(),
+                                "Location not enabled!!",Toast.LENGTH_LONG).show();
+                        break;
+                    default:
+                        break;
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
     }
 
     @Override
@@ -184,11 +270,27 @@ public class Gps4Activity extends AppCompatActivity implements
                     callPlaceDetectionApi();
                 } else {
                     Toast.makeText(getApplicationContext(),
-                            "SMS faild, please try again.", Toast.LENGTH_LONG).show();
+                            "SMS sending faild, please try again.", Toast.LENGTH_LONG).show();
                     return;
                 }
                 break;
+
         }
+    }
+
+    private void setPermissions(){
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                ACCESS_FINE_LOCATION_ID);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.SEND_SMS},
+                SEND_SMS_REQUEST_ID);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.RECEIVE_SMS},
+                RECEIVE_SMS_REQUEST_ID);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                ACCESS_COARSE_LOCATION_ID);
     }
 
     private void callPlaceDetectionApi() throws SecurityException {
@@ -236,16 +338,29 @@ public class Gps4Activity extends AppCompatActivity implements
 //        smsManager.sendTextMessage(number, null, message, null, null);
         result=getContacts();
         for (int i=0;i<result.size();i++){
-            smsManager.sendTextMessage(result.get(i),null,message,null,null);
-            Toast.makeText(getApplicationContext(), "SMS sent : "+String.valueOf(numbers),
-                    Toast.LENGTH_LONG).show();
+
+            try{
+                smsManager.sendTextMessage(result.get(i),null,message,null,null);
+                Toast.makeText(getApplicationContext(), "SMS sent : "+String.valueOf(numbers),
+                        Toast.LENGTH_LONG).show();
+            } catch (Exception e){
+                Toast.makeText(getApplicationContext(),
+                        "SMS sending failed "+e.getMessage(),Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
         }
     }
 
     public void messageSending_individual(String ph_number,String message){
         SmsManager smsManager=SmsManager.getDefault();
-        smsManager.sendTextMessage(ph_number,null,message,null,null);
-        Toast.makeText(getApplicationContext(),"SMS sent : "+String.valueOf(ph_number),
-                Toast.LENGTH_LONG).show();
+        try{
+            smsManager.sendTextMessage(ph_number,null,message,null,null);
+            Toast.makeText(getApplicationContext(),"SMS sent : "+String.valueOf(ph_number),
+                    Toast.LENGTH_LONG).show();
+        } catch (Exception e){
+            Toast.makeText(getApplicationContext(),
+                    "SMS sending failed "+e.getMessage(),Toast.LENGTH_LONG).show();
+        }
+
     }
 }

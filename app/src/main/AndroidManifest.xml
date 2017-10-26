@@ -14,13 +14,13 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:supportsRtl="true">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCJS0UNcCJom-elHhFSMQQI5ARRmbQTQAA" />
 
-        <activity android:name=".Gps4Activity">
+        <activity android:name=".Gps4Activity"
+            android:theme="@style/ActivityTheme">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,7 +29,8 @@
             </intent-filter>
 
         </activity>
-        <activity android:name=".DetailsActivity">
+        <activity android:name=".DetailsActivity"
+            android:theme="@style/AppTheme">
 
 
         </activity>
