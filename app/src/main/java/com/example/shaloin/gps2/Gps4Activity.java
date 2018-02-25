@@ -1,30 +1,25 @@
 package com.example.shaloin.gps2;
 
-import android.*;
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,11 +42,9 @@ import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 
 public class Gps4Activity extends AppCompatActivity implements
-        GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+        GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, com.google.android.gms.location.LocationListener {
 
     private static final String LOG_TAG = "PlacesAPIActivity";
     private static final int GOOGLE_API_CLIENT_ID = 0;
@@ -63,14 +56,15 @@ public class Gps4Activity extends AppCompatActivity implements
     private static final int RECEIVE_SMS_REQUEST_ID=97;
     private static final int ACCESS_COARSE_LOCATION_ID=96;
     private static final int REQUEST_LOCATION=199;
-
-    private TextView display;
-    private Button location_button,contacts_button;
     //String number="+919707153020";
     ArrayList<String> numbers;
     ArrayList<String> result;
     SQLiteDatabase db;
     DatabaseManager manager;
+    private TextView display;
+    private Button location_button, contacts_button;
+    private double currentLatitude;
+    private double currentLongitude;
 
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest locationRequest;
@@ -184,8 +178,24 @@ public class Gps4Activity extends AppCompatActivity implements
         return numbers;
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+
+        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+
+        if (location == null) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
+
+        } else {
+            //If everything went fine lets get latitude and longitude
+            currentLatitude = location.getLatitude();
+            currentLongitude = location.getLongitude();
+
+            Toast.makeText(this, currentLatitude + " WORKS " + currentLongitude + "", Toast.LENGTH_LONG).show();
+        }
+
+
         locationRequest=LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(30*1000);
@@ -279,18 +289,11 @@ public class Gps4Activity extends AppCompatActivity implements
     }
 
     private void setPermissions(){
+
         ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                ACCESS_FINE_LOCATION_ID);
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.SEND_SMS},
+                new String[]{Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_PHONE_STATE, Manifest.permission_group.LOCATION},
                 SEND_SMS_REQUEST_ID);
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.RECEIVE_SMS},
-                RECEIVE_SMS_REQUEST_ID);
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                ACCESS_COARSE_LOCATION_ID);
+
     }
 
     private void callPlaceDetectionApi() throws SecurityException {
@@ -337,6 +340,8 @@ public class Gps4Activity extends AppCompatActivity implements
         SmsManager smsManager = SmsManager.getDefault();
 //        smsManager.sendTextMessage(number, null, message, null, null);
         result=getContacts();
+        message += " https://maps.google.com/maps/?q=" + currentLatitude + "," + currentLongitude;
+
         for (int i=0;i<result.size();i++){
 
             try{
@@ -351,9 +356,10 @@ public class Gps4Activity extends AppCompatActivity implements
         }
     }
 
-    public void messageSending_individual(String ph_number,String message){
+    public void messageSending_individual(String ph_number, String message){
         SmsManager smsManager=SmsManager.getDefault();
         try{
+            message += " https://maps.google.com/maps/?q=" + currentLatitude + "," + currentLongitude;
             smsManager.sendTextMessage(ph_number,null,message,null,null);
             Toast.makeText(getApplicationContext(),"SMS sent : "+String.valueOf(ph_number),
                     Toast.LENGTH_LONG).show();
@@ -361,6 +367,15 @@ public class Gps4Activity extends AppCompatActivity implements
             Toast.makeText(getApplicationContext(),
                     "SMS sending failed "+e.getMessage(),Toast.LENGTH_LONG).show();
         }
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        currentLatitude = location.getLatitude();
+        currentLongitude = location.getLongitude();
+
+        Toast.makeText(this, currentLatitude + " WORKS " + currentLongitude + "", Toast.LENGTH_LONG).show();
 
     }
 }
