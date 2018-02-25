@@ -19,7 +19,7 @@
         android:supportsRtl="true">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBofvPAPmTggOGMTTUwBEfTPg4toE8vzuU" />
+            android:value="AIzaSyCJS0UNcCJom-elHhFSMQQI5ARRmbQTQAA" />
 
         <activity android:name=".Gps4Activity"
             android:theme="@style/ActivityTheme">
