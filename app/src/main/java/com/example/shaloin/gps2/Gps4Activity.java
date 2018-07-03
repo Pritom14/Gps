@@ -78,6 +78,7 @@ public class Gps4Activity extends AppCompatActivity implements
         result=new ArrayList<>();
         db = new UserDatabase(this).getReadableDatabase();
         manager=new DatabaseManager(Gps4Activity.this);
+        locationRequest =new LocationRequest();
         location_button=(Button)findViewById(R.id.show_button);
         contacts_button=(Button)findViewById(R.id.view_button);
         display=(TextView)findViewById(R.id.location_textview);
